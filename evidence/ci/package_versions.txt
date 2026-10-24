@@ -1,0 +1,4 @@
+- flutter_bloc 9.1.1 [bloc flutter provider]
+- flutter_riverpod 2.6.1 [collection flutter meta riverpod state_notifier]
+- bloc 9.2.1 [meta]
+- riverpod 2.6.1 [collection meta stack_trace state_notifier]

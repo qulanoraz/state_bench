@@ -1,0 +1,5 @@
+00:00 +0: loading /home/runner/work/state_bench/state_bench/test/equivalence_test.dart
+00:00 +0: bloc: renders all 48 tiles and applies an update
+00:00 +1: riverpod: renders all 48 tiles and applies an update
+00:01 +2: same seed gives the same update sequence for both variants
+00:01 +3: All tests passed!

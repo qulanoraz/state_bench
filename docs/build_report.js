@@ -81,7 +81,7 @@ function table(header, rows, widths, opts = {}) {
     columnWidths: w,
     rows: [
       new TableRow({ tableHeader: true, children: header.map((h, i) => cell(h, i, true)) }),
-      ...rows.map((r) => new TableRow({ children: r.map((c, i) => cell(c, i, false)) })),
+      ...rows.map((r) => new TableRow({ cantSplit: true, children: r.map((c, i) => cell(c, i, false)) })),
     ],
   });
 }

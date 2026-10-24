@@ -142,9 +142,9 @@ def main(root: str) -> None:
     if not low_rate.empty:
         print("WARNING: achieved update rate < 95% of nominal in runs:",
               ", ".join(low_rate.run_id))
-    if (df.refresh_rate_hz != 60).any():
-        print("WARNING: some runs were not at 60 Hz:",
-              ", ".join(df.loc[df.refresh_rate_hz != 60, "run_id"]))
+    off = (df.refresh_rate_hz - 60).abs() > 0.5  # reported rate is a float, e.g. 60.0000024
+    if off.any():
+        print("WARNING: some runs were not at 60 Hz:", ", ".join(df.loc[off, "run_id"]))
 
 
 if __name__ == "__main__":

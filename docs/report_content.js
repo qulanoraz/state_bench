@@ -11,6 +11,18 @@ module.exports = ({ P, H1, H2, B, N, Caption, code, table, gap, image, ROOT, Pag
     const ind = Math.min(...sel.filter((l) => l.trim()).map((l) => l.match(/^ */)[0].length));
     return sel.map((l) => l.slice(ind)).join('\n');
   };
+  const csv = src('results/pilot/analysis/runs.csv').split('\n');
+  const hdr = csv[0].split(',');
+  const rows = csv.slice(1).map((l) => Object.fromEntries(l.split(',').map((v, i) => [hdr[i], v])));
+  const f1 = (x) => Number(x).toFixed(1);
+  const pilotRows = [10, 30, 60, 120].flatMap((hz) => ['bloc', 'riverpod'].map((lib) => {
+    const r = rows.find((x) => x.lib === lib && Number(x.hz) === hz);
+    return [lib, String(hz), f1(r.achieved_hz), `${r.frames} (${f1(r.fps)})`, `${f1(r.build_mean_ms)} / ${f1(r.build_p95_ms)}`, `${f1(r.raster_mean_ms)} / ${f1(r.raster_p95_ms)}`, f1(r.jank_pct), Number(r.gc_per_s).toFixed(2)];
+  }));
+  const ciAnalyze = '$ flutter analyze\n' + src('evidence/ci/flutter_analyze.txt').split('\n').filter((l) => /No issues|issues found/.test(l)).join('\n');
+  const ciTest = '$ flutter test --reporter expanded\n' + src('evidence/ci/flutter_test.txt').split('\n').filter((l) => /^\d\d:\d\d \+\d+: (?!loading)/.test(l)).join('\n');
+  const env = JSON.parse(src('results/pilot/emulator/environment.json'));
+  const envExcerpt = JSON.stringify({ recorded_at: env.recorded_at, device_class: env.device_class, model: env.model, android_release: env.android_release, sdk_int: env.sdk_int, flutter: { frameworkVersion: env.flutter.frameworkVersion, channel: env.flutter.channel, frameworkRevision: env.flutter.frameworkRevision, dartSdkVersion: env.flutter.dartSdkVersion } }, null, 2);
   const testLog = src('evidence/pipeline_tests.txt').replace(/ \d+ runs loaded; results in \S+\n/g, ' ').replace(/ \(test_pipeline\.[^)]+\)/g, '');
 
   return [
@@ -118,10 +130,10 @@ module.exports = ({ P, H1, H2, B, N, Caption, code, table, gap, image, ROOT, Pag
       ['BLoC variant', 'lib/variants/bloc_variant.dart', 'Bloc with SampleArrived event; BlocSelector per tile', 'Done'],
       ['Riverpod variant', 'lib/variants/riverpod_variant.dart', 'Notifier + NotifierProvider; Consumer with select() per tile', 'Done'],
       ['Frame recorder', 'lib/bench/frame_recorder.dart', 'Raw FrameTiming + 1 Hz RSS', 'Done'],
-      ['Equivalence tests (O1)', 'test/equivalence_test.dart', 'Same tiles, same values, same seed sequence', 'Written; [[FILL: result of flutter test]]'],
-      ['Benchmark run + driver', 'integration_test/, test_driver/', 'One timed run; writes frames + timeline summary', 'Written; [[FILL: pilot]]'],
+      ['Equivalence tests (O1)', 'test/equivalence_test.dart', 'Same tiles, same values, same seed sequence', 'Done; 3/3 tests pass (CI)'],
+      ['Benchmark run + driver', 'integration_test/, test_driver/', 'One timed run; writes frames + timeline summary', 'Done; 8/8 pilot runs completed'],
       ['Run matrix', 'tool/run_matrix.py', 'Randomised order, cooldown, battery log, resume', 'Done'],
-      ['Analysis pipeline', 'analysis/*.py', 'Metrics, Mann–Whitney, A12, Holm, permutation, Spearman, plots', 'Done; 10/10 tests pass'],
+      ['Analysis pipeline', 'analysis/*.py', 'Metrics, Mann–Whitney, A12, Holm, permutation, Spearman, plots', 'Done; 10/10 tests pass (CI)'],
     ], [1900, 2300, 3600, 1500], { size: 18 }),
     gap(),
     H2('9.2 Architecture and data flow'),
@@ -132,25 +144,31 @@ module.exports = ({ P, H1, H2, B, N, Caption, code, table, gap, image, ROOT, Pag
     B('**Same rebuild scope.** Prayoga et al. (2021) showed that where state is scoped matters as much as the library. Each tile therefore subscribes to its own value in both variants (`BlocSelector` vs `ref.watch(provider.select(...))`). The natural difference stays: BLoC creates an event object and delivers it asynchronously through a stream, while Riverpod updates the state synchronously. That is part of the architecture we want to measure.'),
     B('**Frame policy.** By default, Flutter integration tests show only frames requested by the test (`fadePointers` policy). We switch to `benchmarkLive` after start-up so that the app and the engine schedule frames as on a normal device.'),
     B('**Raw frames and timestamp-based warm-up.** FrameTiming reports arrive in batches, so a batch that reaches us after the warm-up can still contain warm-up frames. We therefore record everything from the start and cut the first 5 seconds in the analysis using each frame’s vsync timestamp.'),
-    H2('9.4 Verification of the analysis pipeline'),
-    P('Before using the pipeline on real data we tested it on small hand-made inputs whose correct answers we know (e.g. 20 frames of 1–20 ms must give p95 = 19.05 ms; Holm-adjusted values were compared with a manual calculation; a frame exactly on budget must not count as jank; a 10 ms frame is fine at 60 Hz but janky at 120 Hz). These fixtures only check the code and are **not** experimental results. Output of `python -m unittest -v test_pipeline`:'),
-    ...code(testLog.split('\n').filter((l) => / \.\.\. |^Ran |^OK|^Python/.test(l)).map((l) => l.replace(/ \(test_pipeline\.[^)]+\)/, '')).join('\n')),
-    H2('9.5 First pilot results'),
-    P('Pilot: one run per condition, 10-second window, low-end device [[FILL: model]], Flutter [[FILL: version]], date [[FILL]]. Values are taken from results/pilot/analysis/runs.csv.'),
-    table(['Lib', 'Hz', 'Frames', 'Achieved Hz', 'Build p95, ms', 'Raster p95, ms', 'Jank %', 'GC/s'],
-      [10, 30, 60, 120].flatMap((hz) => ['bloc', 'riverpod'].map((lib) => [lib, String(hz), '[[ ]]', '[[ ]]', '[[ ]]', '[[ ]]', '[[ ]]', '[[ ]]']))
-      , [1300, 700, 1000, 1300, 1300, 1300, 1000, 900], { size: 18 }),
-    Caption('Table 1. Pilot output (to be filled from the actual run; one run per cell, so no statistical conclusions are drawn).'),
-    P('[[FILL: 2–3 sentences describing what the pilot shows, e.g. whether jank appears at 60/120 Hz, whether achieved Hz stays close to nominal, how large the run time and file sizes are.]]'),
+    H2('9.4 Build and test evidence (GitHub Actions)'),
+    P('Every push to the repository starts a GitHub Actions workflow (.github/workflows/ci.yml) that installs Flutter, compiles the project, runs static analysis, the O1 equivalence tests and the pipeline tests, and then runs the pilot (Section 9.5). Logs are stored in evidence/ci and results in the ci-results branch. Run used for this report: https://github.com/qulanoraz/state_bench/actions/runs/40109634908 (24 October 2026).', { align: AlignmentType.LEFT }),
+    ...code(ciAnalyze + '\n' + ciTest),
+    P('The pipeline itself was tested on small hand-made inputs with known answers (e.g. 20 frames of 1–20 ms must give p95 = 19.05 ms; Holm values were checked by hand; a frame exactly on budget is not jank; a 10 ms frame is fine at 60 Hz but janky at 120 Hz). These fixtures check the code only and are **not** experimental results:'),
+    ...code(testLog.split('\n').filter((l) => / \.\.\. |^Ran |^OK/.test(l)).join('\n')),
+    H2('9.5 First pilot results (Android emulator)'),
+    P('**Setup:** Android 14 emulator (API 34, x86_64, Pixel 6 profile, software GPU *swiftshader*) on a GitHub-hosted Ubuntu runner; Flutter 3.47.8 stable, Dart 3.13.7, profile build; one run per condition, 5 s warm-up + 10 s window, random order (seed 2026), 15 s pause between runs. Values below are copied from results/pilot/analysis/runs.csv.'),
+    table(['Lib', 'Hz', 'Achieved Hz', 'Frames (fps)', 'Build mean / p95, ms', 'Raster mean / p95, ms', 'Jank %', 'GC/s'],
+      pilotRows, [1100, 600, 1100, 1200, 1600, 1600, 900, 800], { size: 18 }),
+    Caption('Table 1. Emulator pilot, one run per condition. Used to check the pipeline only; no statistical conclusions are drawn.'),
+    image(path.join(ROOT, 'results', 'pilot', 'analysis', 'build_p95_ms.png'), 330, 240),
+    Caption('Figure 2. 95th-percentile build time per condition in the emulator pilot (output of analyze.py; dashed line = 16.67 ms budget).'),
+    P('**What the pilot shows.** The whole chain works: all 8 runs finished with exit code 0, each produced about 150 frames in the window, and analyze.py turned the raw files into tables and plots without manual steps. Apart from the first run, which included the initial Gradle build (243 s), one run took about 46 s. At the same time, the pilot shows clearly why the emulator cannot answer the RQ. It renders only about 15 frames per second, raster time is 64–67 ms on average and never below 24 ms, so 100 % of frames are janky in every condition, and this is caused by the software GPU, not by the state layer. Build times are in a realistic range (mean 6–12 ms, p95 14–33 ms) and differ between conditions, but with one run per cell these differences are noise, not results. GC activity was almost the same for both architectures (3.1 GC/s at 10 Hz, 4.2–4.5 GC/s at 30–120 Hz, no old-generation collections).'),
     H2('9.6 Problems and limitations found during the first implementation'),
     N('**The standard summary is not enough.** `TimelineSummary` gives 90th/99th percentiles and its own missed-budget count, but no 95th percentile. We added our own recorder for raw FrameTiming data.', 'steps2'),
     N('**Timers do not guarantee the update rate.** Dart’s `Timer.periodic` may fire less often than requested when the UI isolate is overloaded, so at 120 updates/s the real rate may be lower than nominal. We now count emitted samples and flag runs below 95 %. If this happens often at 120 Hz, the frequency factor itself becomes weaker, which we will report.', 'steps2'),
     N('**Refresh rate of modern phones.** Many phones run at 90 or 120 Hz, which changes the frame budget (8.3 ms at 120 Hz). The budget is now computed from the measured refresh rate, the phones are locked to 60 Hz, and runs at other rates are flagged.', 'steps2'),
     N('**Lazy grid.** `GridView.builder` builds only visible tiles; on a small screen some of the 48 tiles might never be built, which would make the workload depend on the screen size. The equivalence test uses a 393 × 851 dp surface and checks that all 48 tiles are built; before the main runs we check this on both phones.', 'steps2'),
     N('**Allocation rate inside timed runs.** Connecting to the VM service from inside the app conflicts with the Dart Development Service used by `flutter drive`, and allocation tracing adds overhead to every frame. Allocation rate was therefore moved to separate diagnostic runs (Section 6, step 6). CPU load, a secondary metric in Assignment 2, is read in the same diagnostic runs.', 'steps2'),
-    N('[[FILL: any error or surprise from your own pilot run, e.g. build time per run, a failed run and its cause.]]', 'steps2'),
+    N('**Emulator rendering makes frame data useless.** In the pilot every frame was raster-bound (raster time > 16.67 ms in 100 % of frames, build time in only 3–15 %). This confirms the decision to exclude emulators from the main experiment; the emulator is kept only as an automatic smoke test.', 'steps2'),
+    N('**The update rate is not reached under load (confirmed).** Achieved rates were 9.9 (10 Hz), 27–28 (30 Hz), 44–45 (60 Hz) and 71–74 (120 Hz) updates/s. The generator timer shares the UI isolate with frame building, so when frames are slow the timer fires late. On physical phones the gap should be smaller, but the achieved rate will be reported as a covariate, and if needed the generator will be moved to a separate isolate.', 'steps2'),
+    N('**A bug in our own analysis script.** The pilot flagged all runs as “not 60 Hz”, although the display reported 60.0000038 Hz: the script compared floating-point numbers exactly. It now uses a ±0.5 Hz tolerance.', 'steps2'),
+    N('**Test hang in CI.** The first CI run hung in `flutter test` because the BLoC was closed inside the fake-async test zone, where its stream never completes. Disposal now runs in `tester.runAsync`, and the CI has time limits.', 'steps2'),
     H2('9.7 Reproducibility record and next steps'),
-    P('Flutter [[FILL]], Dart [[FILL]], flutter_bloc 9.1.1, flutter_riverpod 2.6.1; Python 3.13, numpy 2.5, scipy 1.18, pandas 3.0, matplotlib 3.11 (versions used for the pipeline tests); generator seed 42, order seed 2026; commands are listed in the repository README. Next steps: run the pilot on the mid-range phone, fix the final number of repetitions from the pilot variance, then start the main runs.'),
+    P('Flutter 3.47.8 (stable, framework revision 737ba8f885), Dart 3.13.7; flutter_bloc 9.1.1 (bloc 9.2.1), flutter_riverpod 2.6.1 (riverpod 2.6.1); Python 3.12 in CI with numpy, scipy, pandas, matplotlib; generator seed 42, order seed 2026; emulator API 34 x86_64. All commands are in the README and the CI workflow. **Next steps:** borrow the two Android phones, repeat the pilot on them to see the real variance, fix the number of repetitions (20–30), and then run the main experiment; consider moving the generator to a separate isolate if the achieved rate is still too low.'),
 
     // ------------------------------------------------------------------ 10
     H1('10. Methodology Alignment Table'),
@@ -216,7 +234,7 @@ module.exports = ({ P, H1, H2, B, N, Caption, code, table, gap, image, ROOT, Pag
     P('**B.5 Jank and percentile computation** (analysis/metrics.py)'),
     ...code(excerpt('analysis/metrics.py', 'def frame_metrics', '"budget_ms"')),
     H2('Appendix C. O1 equivalence test (test/equivalence_test.dart)'),
-    ...code(excerpt('test/equivalence_test.dart', 'for (final lib in StateLib.values)', 'await controller.dispose();')),
+    ...code(excerpt('test/equivalence_test.dart', 'for (final lib in StateLib.values)', 'tester.runAsync(controller.dispose)')),
     H2('Appendix D. Data dictionary (runs.csv)'),
     table(['Column', 'Unit', 'Meaning'], [
       ['run_id', '–', 'device class_lib_Hz_repetition, e.g. low_bloc_60_07'],
@@ -238,6 +256,15 @@ module.exports = ({ P, H1, H2, B, N, Caption, code, table, gap, image, ROOT, Pag
       'All 48 tiles visible on screen without scrolling (checked once per phone)',
       'Run: `python tool/run_matrix.py --device <id> --device-class <low|mid>`'].map((t) => B(t)),
     H2('Appendix F. Pilot evidence'),
-    P('[[FILL: screenshot of the terminal with run_matrix.py --pilot, screenshot of results/pilot/analysis/runs.csv, and the plot jank_pct.png produced by analyze.py.]]'),
+    P('**F.1 run_log.csv** (written by run_matrix.py; battery values are those reported by the emulator)'),
+    ...code(src('results/pilot/emulator/run_log.csv')),
+    P('**F.2 analyze.py console output**'),
+    ...code(src('results/pilot/analyze_console.txt')),
+    P('**F.3 Jank and raster plots produced by analyze.py**'),
+    image(path.join(ROOT, 'results', 'pilot', 'analysis', 'raster_p95_ms.png'), 330, 240),
+    image(path.join(ROOT, 'results', 'pilot', 'analysis', 'jank_pct.png'), 330, 240),
+    Caption('Figure 3. Raster p95 and jank % in the emulator pilot: the software GPU keeps raster time far above the budget, so jank is 100 % everywhere.'),
+    P('**F.4 Environment record** (results/pilot/emulator/environment.json, excerpt)'),
+    ...code(envExcerpt),
   ];
 };

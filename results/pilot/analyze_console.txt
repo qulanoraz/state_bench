@@ -1,0 +1,2 @@
+8 runs loaded; results in results/pilot/analysis
+WARNING: achieved update rate < 95% of nominal in runs: emulator_bloc_120_01, emulator_bloc_30_01, emulator_bloc_60_01, emulator_riverpod_120_01, emulator_riverpod_30_01, emulator_riverpod_60_01
