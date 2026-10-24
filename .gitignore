@@ -1,0 +1,10 @@
+build/
+.dart_tool/
+.idea/
+.vscode/
+__pycache__/
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+docs/*.pdf
+docs/node_modules/

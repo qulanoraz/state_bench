@@ -1,0 +1,15 @@
+flowchart TB
+  subgraph APP["Flutter app (profile build, Android device)"]
+    G["UpdateGenerator<br/>Timer.periodic, Random(seed=42)<br/>10/30/60/120 updates/s"] --> S{{"TelemetrySink<br/>(interface)"}}
+    S -->|"LIB=bloc"| B1["BlocSink → DashboardBloc<br/>add(SampleArrived) → emit(state)"]
+    S -->|"LIB=riverpod"| R1["RiverpodSink → DashboardNotifier<br/>state = new DashboardState"]
+    B1 --> B2["BlocSelector × 48"]
+    R1 --> R2["Consumer + select() × 48"]
+    B2 --> UI["Shared UI: Dashboard + TileView × 48"]
+    R2 --> UI
+    UI --> FR["FrameRecorder<br/>FrameTiming: build, raster, vsync<br/>RSS 1 Hz"]
+  end
+  FR --> IT["integration_test<br/>traceAction (Dart, Embedder, GC)<br/>reportData"]
+  IT --> DRV["perf_driver.dart (host)<br/>run_frames.json + timeline_summary.json"]
+  RUN["run_matrix.py<br/>randomised order, cooldown, log"] --> IT
+  DRV --> AN["analysis/analyze.py<br/>trim warm-up → per-run metrics →<br/>Mann–Whitney, A12, Holm, permutation, Spearman"]
