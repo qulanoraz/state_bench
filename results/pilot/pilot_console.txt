@@ -1,0 +1,9 @@
+[1/8] emulator_riverpod_60_01 battery={'battery_level': 100, 'battery_temp_c': 25.0}
+[2/8] emulator_riverpod_120_01 battery={'battery_level': 100, 'battery_temp_c': 25.0}
+[3/8] emulator_bloc_120_01 battery={'battery_level': 100, 'battery_temp_c': 25.0}
+[4/8] emulator_bloc_10_01 battery={'battery_level': 100, 'battery_temp_c': 25.0}
+[5/8] emulator_riverpod_30_01 battery={'battery_level': 100, 'battery_temp_c': 25.0}
+[6/8] emulator_riverpod_10_01 battery={'battery_level': 100, 'battery_temp_c': 25.0}
+[7/8] emulator_bloc_60_01 battery={'battery_level': 100, 'battery_temp_c': 25.0}
+[8/8] emulator_bloc_30_01 battery={'battery_level': 100, 'battery_temp_c': 25.0}
+Done. Raw files in /home/runner/work/state_bench/state_bench/results/pilot/emulator

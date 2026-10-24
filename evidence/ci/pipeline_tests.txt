@@ -1,0 +1,16 @@
+test_pipeline_runs_on_file_format (test_pipeline.EndToEndTest.test_pipeline_runs_on_file_format) ... ok
+test_budget_follows_refresh_rate (test_pipeline.FrameMetricTests.test_budget_follows_refresh_rate) ... ok
+test_exactly_on_budget_is_not_jank (test_pipeline.FrameMetricTests.test_exactly_on_budget_is_not_jank) ... ok
+test_jank_uses_build_or_raster (test_pipeline.FrameMetricTests.test_jank_uses_build_or_raster) ... ok
+test_p95_linear_interpolation (test_pipeline.FrameMetricTests.test_p95_linear_interpolation) ... ok
+test_warmup_trimming (test_pipeline.FrameMetricTests.test_warmup_trimming) ... ok
+test_a12_extremes (test_pipeline.StatsTests.test_a12_extremes) ... ok
+test_holm_matches_hand_computation (test_pipeline.StatsTests.test_holm_matches_hand_computation) ... ok
+test_permutation_detects_growing_difference (test_pipeline.StatsTests.test_permutation_detects_growing_difference) ... ok
+test_permutation_no_difference (test_pipeline.StatsTests.test_permutation_no_difference) ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.848s
+
+OK
+2 runs loaded; results in /tmp/tmpquw1kx2n/analysis
