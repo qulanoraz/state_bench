@@ -18,7 +18,7 @@ module.exports = ({ P, H1, H2, B, N, Caption, code, table, gap, image, ROOT, Pag
     P('**Student(s):** Ashkenov Nurgaly, Orazbek Ulan', { align: AlignmentType.LEFT }),
     P('**Group:** SE-2406', { align: AlignmentType.LEFT }),
     P('**Core practical track:** Other Technical Experiment (controlled performance benchmark / testbed)', { align: AlignmentType.LEFT }),
-    P('**Repository:** [[FILL: GitHub link to the state_bench repository]]', { align: AlignmentType.LEFT }),
+    P('**Repository:** https://github.com/qulanoraz/state_bench', { align: AlignmentType.LEFT }),
 
     // ------------------------------------------------------------------ 1
     H1('1. Final / Revised Research Title'),
@@ -55,7 +55,7 @@ module.exports = ({ P, H1, H2, B, N, Caption, code, table, gap, image, ROOT, Pag
     ], [1200, 4100, 4000]),
     gap(),
     P('**Sample size:** **30 runs per condition**, 240 per device, 480 in total. Thirty repetitions is the common minimum for noisy software experiments (Arcuri & Briand, 2011; Georges et al., 2007); earlier Flutter studies used two (Zulistiyan et al., 2024) or twenty runs (Puryanto & Akbar, 2025). A run takes about 2–2.5 minutes with build and cooldown, so one phone needs 9–10 hours spread over several evenings (the runner resumes where it stopped). Our lower limit is 20 runs if the pilot shows low variance.'),
-    P('**Selection and access:** **purposive sampling**, one phone per class, because we compare hardware classes rather than estimate all Android phones. Both phones belong to the team: low-end – [[FILL: model, RAM, SoC, Android]]; mid-range – [[FILL: model, RAM, SoC, Android]].'),
+    P('**Selection and access:** **purposive sampling**, one phone per class, because we compare hardware classes rather than estimate all Android phones. Both team members use iPhones, so two Android phones that meet the criteria will be borrowed from classmates for the main runs; their models are recorded automatically in environment.json. Until then, the pilot is run on an Android emulator in GitHub Actions (Section 9.5), only to check the pipeline.'),
     P('**Bias:** (1) with one phone per class, vendor and SoC effects mix with the class effect, so we report exact models and treat SQ2 as exploratory; (2) a phone heats up during a session, so run order is randomised, runs are separated by a cooldown and battery temperature is logged; (3) we wrote both variants, so both follow the official documentation patterns (Bloc Library, n.d.; Riverpod, n.d.) and equivalence tests check that they behave the same.'),
 
     // ------------------------------------------------------------------ 5

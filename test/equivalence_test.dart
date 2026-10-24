@@ -33,7 +33,8 @@ void main() {
       expect(find.text('0.0'), findsNothing); // every tile was updated
       expect(find.textContaining('tick 1'), findsOneWidget);
 
-      await controller.dispose();
+      // Close streams outside the fake-async zone, otherwise the test hangs.
+      await tester.runAsync(controller.dispose);
     });
   }
 
