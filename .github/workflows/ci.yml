@@ -2,7 +2,11 @@ name: state_bench CI
 
 on:
   push:
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   tests:
@@ -15,15 +19,24 @@ jobs:
         with: { distribution: temurin, java-version: '17' }
       - uses: subosito/flutter-action@v2
         with: { channel: stable, cache: true }
-      - run: flutter --version
-      - run: flutter create . --platforms=android --project-name state_bench && rm -f test/widget_test.dart
-      - run: flutter pub get
-      - run: flutter analyze --no-fatal-infos
-      - run: flutter test --reporter expanded --timeout 90s
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - run: pip install numpy scipy pandas matplotlib
-      - run: cd analysis && python -m unittest -v test_pipeline
+      - name: Build and test (logs saved to evidence/ci)
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p evidence/ci
+          flutter --version 2>&1 | tee evidence/ci/flutter_version.txt
+          flutter create . --platforms=android --project-name state_bench && rm -f test/widget_test.dart
+          flutter pub get
+          flutter pub deps --style=compact 2>&1 | grep -E "bloc|riverpod" | tee evidence/ci/package_versions.txt || true
+          flutter analyze --no-fatal-infos 2>&1 | tee evidence/ci/flutter_analyze.txt
+          flutter test --reporter expanded --timeout 90s 2>&1 | tee evidence/ci/flutter_test.txt
+          (cd analysis && python -m unittest -v test_pipeline) 2>&1 | tee evidence/ci/pipeline_tests.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: ci-logs, path: evidence/ci/ }
 
   pilot-emulator:
     name: Pilot run on Android emulator (pipeline readiness, not final data)
@@ -55,12 +68,21 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
-          script: python tool/run_matrix.py --device emulator-5554 --device-class emulator --pilot
+          script: python tool/run_matrix.py --device emulator-5554 --device-class emulator --pilot 2>&1 | tee pilot_console.txt
       - name: Analyse pilot
         if: always()
-        run: python analysis/analyze.py results/pilot || true
-      - uses: actions/upload-artifact@v4
+        run: python analysis/analyze.py results/pilot 2>&1 | tee results/pilot/analyze_console.txt || true
+      - uses: actions/download-artifact@v4
         if: always()
-        with:
-          name: pilot-results-emulator
-          path: results/
+        with: { name: ci-logs, path: evidence/ci }
+      - name: Publish results to branch ci-results
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p results/pilot && cp pilot_console.txt results/pilot/ 2>/dev/null || true
+          git config user.name "github-actions[bot]"
+          git config user.email "41898499+github-actions[bot]@users.noreply.github.com"
+          git checkout -B ci-results
+          git add -f results evidence/ci
+          git commit -m "CI pilot results (run ${GITHUB_RUN_ID})" || true
+          git push -f origin ci-results
